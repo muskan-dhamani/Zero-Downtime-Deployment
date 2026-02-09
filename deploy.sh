@@ -4,13 +4,14 @@ IMAGE=$1
 APP_NAME=jenkins-app
 BLUE_PORT=8081
 GREEN_PORT=8082
+CONTAINER_PORT=80   # CHANGE if your app uses another port
 
 if [ -z "$IMAGE" ]; then
   echo "Image required"
   exit 1
 fi
 
-# Detect which color is running
+# Detect active color
 if docker ps --format '{{.Names}}' | grep -q "${APP_NAME}-blue"; then
   ACTIVE_COLOR="blue"
   ACTIVE_PORT=$BLUE_PORT
@@ -29,7 +30,7 @@ echo "Deploying: $NEW_COLOR on port $NEW_PORT"
 # Start new container
 docker run -d \
   --name ${APP_NAME}-${NEW_COLOR} \
-  -p ${NEW_PORT}:80 \
+  -p ${NEW_PORT}:${CONTAINER_PORT} \
   ${IMAGE}
 
 echo "Waiting for application to become healthy..."
@@ -38,12 +39,12 @@ MAX_RETRIES=10
 SLEEP_TIME=3
 COUNT=0
 
-until curl -f http://localhost:$NEW_PORT
+until curl -f http://localhost:${NEW_PORT}
 do
   COUNT=$((COUNT+1))
   if [ "$COUNT" -ge "$MAX_RETRIES" ]; then
     echo "Health check failed after retries"
-    docker rm -f jenkins-app-$NEW
+    docker rm -f ${APP_NAME}-${NEW_COLOR}
     exit 1
   fi
   echo "Retry $COUNT/$MAX_RETRIES..."
@@ -51,7 +52,6 @@ do
 done
 
 echo "New container is healthy"
-
 
 # Stop old container
 docker rm -f ${APP_NAME}-${ACTIVE_COLOR} || true
