@@ -32,13 +32,26 @@ docker run -d \
   -p ${NEW_PORT}:80 \
   ${IMAGE}
 
-# Simple health check
-sleep 5
-if ! curl -f http://localhost:${NEW_PORT}; then
-  echo "New container failed health check"
-  docker rm -f ${APP_NAME}-${NEW_COLOR}
-  exit 1
-fi
+echo "Waiting for application to become healthy..."
+
+MAX_RETRIES=10
+SLEEP_TIME=3
+COUNT=0
+
+until curl -f http://localhost:$NEW_PORT
+do
+  COUNT=$((COUNT+1))
+  if [ "$COUNT" -ge "$MAX_RETRIES" ]; then
+    echo "Health check failed after retries"
+    docker rm -f jenkins-app-$NEW
+    exit 1
+  fi
+  echo "Retry $COUNT/$MAX_RETRIES..."
+  sleep $SLEEP_TIME
+done
+
+echo "New container is healthy"
+
 
 # Stop old container
 docker rm -f ${APP_NAME}-${ACTIVE_COLOR} || true
