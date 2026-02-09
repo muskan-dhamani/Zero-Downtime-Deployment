@@ -4,7 +4,7 @@ IMAGE=$1
 APP_NAME=jenkins-app
 BLUE_PORT=8081
 GREEN_PORT=8082
-CONTAINER_PORT=80   # CHANGE if your app uses another port
+CONTAINER_PORT=80
 
 if [ -z "$IMAGE" ]; then
   echo "Image required"
